@@ -1,0 +1,11 @@
+{
+  "name": "obsidianclaw-website",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "node --test worker.test.mjs",
+    "deploy": "npm test && wrangler deploy"
+  },
+  "devDependencies": { "wrangler": "4.135.0" }
+}
