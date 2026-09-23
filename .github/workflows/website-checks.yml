@@ -1,0 +1,28 @@
+name: Website checks
+on:
+  push:
+    branches: [main, migration/cloudflare-website]
+    paths: ['landing/**', 'cloudflare/**', '.github/workflows/website-checks.yml']
+  pull_request:
+    paths: ['landing/**', 'cloudflare/**', '.github/workflows/website-checks.yml']
+permissions:
+  contents: read
+jobs:
+  website:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: cloudflare
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: cloudflare/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - name: Verify exact public asset allowlist and bytes
+        run: |
+          node --input-type=module -e "import fs from 'node:fs'; import assert from 'node:assert/strict'; const files=['humanity-labs-logo.png','index.html']; assert.deepEqual(fs.readdirSync('dist').sort(),files); for(const f of files) assert.deepEqual(fs.readFileSync('dist/'+f),fs.readFileSync('../landing/'+f));"

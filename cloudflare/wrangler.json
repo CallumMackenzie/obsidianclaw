@@ -1,0 +1,21 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "obsidianclaw-landing",
+  "account_id": "92b29f2f2f8c6d5e59594884ee852913",
+  "main": "worker.mjs",
+  "compatibility_date": "2026-09-21",
+  "workers_dev": true,
+  "preview_urls": false,
+  "routes": [
+    { "pattern": "obsidianclaw.ai/*", "zone_name": "obsidianclaw.ai" },
+    { "pattern": "www.obsidianclaw.ai/*", "zone_name": "obsidianclaw.ai" }
+  ],
+  "build": { "command": "node build.mjs" },
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "run_worker_first": true,
+    "html_handling": "none",
+    "not_found_handling": "none"
+  }
+}
