@@ -8,7 +8,7 @@ export default [
   },
   ...obsidian.configs.recommended,
   {
-    files: ["main.ts"],
+    files: ["main.ts", "math.ts"],
     languageOptions: {
       parser: tsparser,
       parserOptions: {

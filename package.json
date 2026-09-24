@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "node esbuild.config.mjs",
     "build": "node esbuild.config.mjs production",
-    "lint": "eslint main.ts --max-warnings=0",
+    "lint": "eslint main.ts math.ts --max-warnings=0",
     "typecheck": "tsc --noEmit"
   },
   "keywords": [

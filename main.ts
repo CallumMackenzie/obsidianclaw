@@ -13,6 +13,7 @@ import {
   WorkspaceLeaf,
   setIcon,
 } from "obsidian";
+import { normalizeMathDelimiters } from "./math";
 
 // ─── Settings ────────────────────────────────────────────────────────
 
@@ -1357,6 +1358,8 @@ class OpenClawChatView extends ItemView {
   private runToSession = new Map<string, string>();
 
   private streamEl: HTMLElement | null = null;
+  private streamRenderTimer: number | null = null;
+  private streamRenderRevision = 0;
 
   /** Get current active session key */
   private get activeSessionKey(): string { return this.plugin.settings.sessionKey || "main"; }
@@ -1813,6 +1816,11 @@ class OpenClawChatView extends ItemView {
   }
 
   async onClose(): Promise<void> {
+    if (this.streamRenderTimer !== null) {
+      window.clearTimeout(this.streamRenderTimer);
+      this.streamRenderTimer = null;
+    }
+    this.streamRenderRevision++;
     if (this.plugin.chatView === this) {
       this.plugin.chatView = null;
     }
@@ -3834,9 +3842,30 @@ class OpenClawChatView extends ItemView {
       this.streamEl = this.messagesEl.createDiv("openclaw-msg openclaw-msg-assistant openclaw-streaming");
       this.scrollToBottom(); // Scroll once when bubble first appears
     }
-    this.streamEl.empty();
-    this.streamEl.createDiv({ text: visibleText, cls: "openclaw-msg-text" });
+    const target = this.streamEl;
+    const revision = ++this.streamRenderRevision;
+    if (this.streamRenderTimer !== null) window.clearTimeout(this.streamRenderTimer);
+    this.streamRenderTimer = window.setTimeout(() => {
+      this.streamRenderTimer = null;
+      void this.renderStreamMarkdown(target, visibleText, revision);
+    }, 50);
     // Don't auto-scroll during text streaming — let user read from the top
+  }
+
+  private async renderStreamMarkdown(target: HTMLElement, markdown: string, revision: number): Promise<void> {
+    const rendered = target.ownerDocument.createElement("div");
+    await this.renderAssistantMarkdown(markdown, rendered);
+    if (revision !== this.streamRenderRevision || this.streamEl !== target) return;
+    target.replaceChildren(...Array.from(rendered.childNodes));
+  }
+
+  private async renderAssistantMarkdown(markdown: string, container: HTMLElement): Promise<void> {
+    const normalized = normalizeMathDelimiters(markdown);
+    try {
+      await MarkdownRenderer.render(this.app, normalized, container, "", this);
+    } catch {
+      container.createDiv({ text: markdown, cls: "openclaw-msg-text" });
+    }
   }
 
   async renderMessages(): Promise<void> {
@@ -3854,11 +3883,7 @@ class OpenClawChatView extends ItemView {
               // Render text bubble if there's visible text
               if (cleaned) {
                 const bubble = this.messagesEl.createDiv("openclaw-msg openclaw-msg-assistant");
-                try {
-                  await MarkdownRenderer.render(this.app, cleaned, bubble, "", this);
-                } catch {
-                  bubble.createDiv({ text: cleaned, cls: "openclaw-msg-text" });
-                }
+                await this.renderAssistantMarkdown(cleaned, bubble);
                 // Audio players inside text bubble
                 for (const ap of blockAudio) {
                   this.renderAudioPlayer(bubble, ap);
@@ -3906,11 +3931,7 @@ class OpenClawChatView extends ItemView {
         const displayText = msg.role === "assistant" ? this.cleanText(msg.text) : msg.text;
         if (displayText) {
           if (msg.role === "assistant") {
-            try {
-              await MarkdownRenderer.render(this.app, displayText, bubble, "", this);
-            } catch {
-              bubble.createDiv({ text: displayText, cls: "openclaw-msg-text" });
-            }
+            await this.renderAssistantMarkdown(displayText, bubble);
           } else {
             bubble.createDiv({ text: displayText, cls: "openclaw-msg-text" });
           }

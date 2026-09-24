@@ -980,6 +980,18 @@
   color: var(--text-muted);
 }
 
+/* Keep wide display equations usable in the narrow chat sidebar. */
+.openclaw-msg-assistant .math-block {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 2px;
+}
+
+.openclaw-msg-assistant mjx-container {
+  max-width: 100%;
+}
+
 /* Tool call items (always visible, persistent) */
 .openclaw-tool-item {
   font-size: 11px;
